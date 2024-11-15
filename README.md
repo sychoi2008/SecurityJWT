@@ -41,4 +41,6 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 ```
 이 메서드는 Spring Security가 요청을 받을 때 정의된 순서대로 보안 필터들을 적용하도록 보안 규칙을 체인 형태로 만들어 반환합니다.
 
-
+## 2. 로그인 로직
+- 로그인 필터 & 로그인 검증 -> 두 가지가 중요
+- 

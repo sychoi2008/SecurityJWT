@@ -53,3 +53,6 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 UserDetailsService는 id를 기반으로 DB에서 회원 정보를 가져와 UserDetails 객체에 담아 Authentication Manager에게 반환한다.
 4. Authentication Manager는 요청에서 받은 비밀번호와 UserDetails에 저장된 비밀번호를 비교해 검증한다. 비밀번호가 일치하면, 인증이 완료된 Authentication 객체를 생성하여 UsernamePasswordAuthenticationFilter에게 반환한다.
 5. UsernamePasswordAuthenticationFilter는 successfulAuthentication 메서드를 호출하여 인증 성공 처리를 진행한다.
+
+
+## 3. JWT 발급 및 검증 클래스 

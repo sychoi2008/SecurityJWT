@@ -45,4 +45,11 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 - 로그인 필터 & 로그인 검증 -> 두 가지가 중요
   
 - form login을 disable 시켰기 때문에 UsernamePasswordAuthenticationFilter, Authentication Manager을 구현해줘야 한다
-- 
+
+<로그인 과정>
+1. 사용자의 요청을 Security Filter Chain이 가로채서 적절한 필터에게 요청을 넘긴다.
+2. 여러 필터를 거쳐 UsernamePasswordAuthenticationFilter에 요청이 도착하며, 요청에서 id와 pwd를 꺼내 이를 UsernamePasswordAuthenticationToken에 담아 Authentication Manager에게 넘긴다.
+3. Authentication Manager는 UserDetailsService를 호출하여, id를 기반으로 사용자 정보를 조회한다.
+UserDetailsService는 id를 기반으로 DB에서 회원 정보를 가져와 UserDetails 객체에 담아 Authentication Manager에게 반환한다.
+4. Authentication Manager는 요청에서 받은 비밀번호와 UserDetails에 저장된 비밀번호를 비교해 검증한다. 비밀번호가 일치하면, 인증이 완료된 Authentication 객체를 생성하여 UsernamePasswordAuthenticationFilter에게 반환한다.
+5. UsernamePasswordAuthenticationFilter는 successfulAuthentication 메서드를 호출하여 인증 성공 처리를 진행한다.

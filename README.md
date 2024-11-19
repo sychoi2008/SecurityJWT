@@ -55,4 +55,10 @@ UserDetailsService는 id를 기반으로 DB에서 회원 정보를 가져와 Use
 5. UsernamePasswordAuthenticationFilter는 successfulAuthentication 메서드를 호출하여 인증 성공 처리를 진행한다.
 
 
-## 3. JWT 발급 및 검증 클래스 
+## 3. JWT 검증
+<검증 과정>
+1. security filter chain 중 JWTFilter가 요청을 가로챔
+2. 요청 헤더에서 jwt를 빼서 토큰 검증
+3. 유효한 토큰이면 UserDetails로 만들어서 Security Context Holder를 일시적으로 생성
+   - 하나의 요청 안에서 회원 정보를 조금 더 효율적으로 접근하기 위해 일시적인 세션(?)을 생성한 것
+

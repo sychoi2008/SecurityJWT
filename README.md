@@ -62,3 +62,9 @@ UserDetailsService는 id를 기반으로 DB에서 회원 정보를 가져와 Use
 3. 유효한 토큰이면 UserDetails로 만들어서 Security Context Holder를 일시적으로 생성
    - 하나의 요청 안에서 회원 정보를 조금 더 효율적으로 접근하기 위해 일시적인 세션(?)을 생성한 것
 
+
+## 4. Refresh Token을 이용해서 Access token 재발급 과정(간단히)
+- 로그인이 완료되면 스프링의 successHandler에서 Access와 Refresh 토큰을 2개 발급해서 응답한다
+- 만약, 클라이언트가 보낸 Access Token이 만료가 되었다면 프론트 개발자와 협의해 상태코드와 메세지를 응답함
+- 프론트에서는 만료되었다는 response가 오면 예외문을 통해 refresh token을 서버측으로 전송하고 새로운 Access token을 발급받는다(기존 것을 제거)
+- 서버 측에서는 refresh token을 받아서 검증하고 새로운 access token을 응답할 로직을 만든다

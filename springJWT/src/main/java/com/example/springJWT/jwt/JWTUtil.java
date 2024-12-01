@@ -20,6 +20,10 @@ public class JWTUtil {
         secretKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), Jwts.SIG.HS256.key().build().getAlgorithm());
     }
 
+    public String getCategory(String token) {
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("category", String.class);
+    }
+
     // jwt를 parse해서 내부 데이터를 확인한다. ex: jwt가 만료되었는지, username은 무엇인지 등
     public String getUsername(String token) {
         // 토큰이 암호화가 진행되어있으니 우리가 가지고 있는 시크릿 키로 암호화 진행
@@ -38,9 +42,10 @@ public class JWTUtil {
 
 
     // UsernamePasswordAuthenticationFilter에서 successfulMethod를 진행 -> 토큰 생성
-    public String createJwt(String username, String role, Long expiredMs) {
+    public String createJwt(String category, String username, String role, Long expiredMs) {
 
         return Jwts.builder()
+                .claim("category", category)
                 .claim("username", username)
                 .claim("role", role)
                 .issuedAt(new Date(System.currentTimeMillis())) // 발행시간

@@ -1,8 +1,10 @@
 package com.example.springJWT.config;
 
+import com.example.springJWT.jwt.CustomLogoutFilter;
 import com.example.springJWT.jwt.JWTFilter;
 import com.example.springJWT.jwt.JWTUtil;
 import com.example.springJWT.jwt.LoginFilter;
+import com.example.springJWT.repository.RefreshRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -26,6 +29,7 @@ import java.util.Collections;
 public class SecurityConfig {
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JWTUtil jwtUtil;
+    private final RefreshRepository refreshRepository;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception{
@@ -34,7 +38,7 @@ public class SecurityConfig {
 
     // 스프링 시큐리티를 이용해서 회원 가입이나 로그인을 한다면 반드시 비크립트 암호화를 통해 해쉬함수로 비밀번호를 한번 돌려줘야 함 
     @Bean
-    public BCryptPasswordEncoder bCryptPasswordEncoder() {
+    public BCryptPasswordEncoder bCryptPasswordEncoder() { // joinService에서 실행 중
         return new BCryptPasswordEncoder();
     }
 
@@ -82,6 +86,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests((auth) -> auth
                         .requestMatchers("/login", "/", "join").permitAll() // 모든 경로 허용
                         .requestMatchers("/admin").hasRole("ADMIN") // 이 경로에서는 ADMIN 역할이어야 함
+                        .requestMatchers("/reissue").permitAll() // 로그인 자체가 불가능한 상태이므로
                         .anyRequest().authenticated()); // 그 이외의 나머지 경로는 로그인한 사람만 접근 가능
 
 
@@ -91,7 +96,12 @@ public class SecurityConfig {
 
         // UsernamePasswordAuthenticationFilter 자리에 대체해서 넣을 거기에 addFilterAt 사용
         http
-                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil), UsernamePasswordAuthenticationFilter.class);
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration), jwtUtil, refreshRepository), UsernamePasswordAuthenticationFilter.class);
+
+        // LogOutFilter 앞에다가 커스텀한 로그아웃 필터를 만듦
+        http
+                .addFilterBefore(new CustomLogoutFilter(jwtUtil, refreshRepository), LogoutFilter.class);
+
 
         http
                 .sessionManagement((session) -> session

@@ -18,7 +18,7 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         Collection<GrantedAuthority> collection = new ArrayList<>();
-        collection.add(new GrantedAuthority() {
+        collection.add(new GrantedAuthority() { // 익명 클래스의 인스턴스가 저장된다. 즉, 참조값이 저장된다
             @Override
             public String getAuthority() {
                 return userEntity.getRole();
@@ -27,6 +27,10 @@ public class CustomUserDetails implements UserDetails {
 
 
         return collection;
+
+        /*
+        LoginFilter에서 해당 메서드를 실행할 때 익명 클래스 내부의 메서드가 실행이 됨
+         */
     }
 
     // password 반환

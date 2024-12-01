@@ -2,6 +2,7 @@ package com.example.springJWT.jwt;
 
 import com.example.springJWT.dto.CustomUserDetails;
 import com.example.springJWT.entity.UserEntity;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 @RequiredArgsConstructor
 public class JWTFilter extends OncePerRequestFilter {
@@ -21,49 +23,57 @@ public class JWTFilter extends OncePerRequestFilter {
     // JWT 토큰을 검증하는 클래스
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // HTTP request 의 header를 뽑아 올 것임
-        String authorization = request.getHeader("Authorization");
 
-        // 헤더 검증 : 토큰이 없거나 접두사가 이상하거나
-        if(authorization == null || !authorization.startsWith("Bearer ")) {
-            System.out.println("token null");
-            // 이 필터를 종료하고 다음 필터로 요청을 넘기는 것
+        String accessToken = request.getHeader("access");
+
+        // 토큰이 없다면 다음 필터로 넘김
+        // 권한이 필요없는 요청일 수도 있어서 뒷 필터로 넘긴다
+        if (accessToken == null) {
             filterChain.doFilter(request, response);
-
             return;
         }
 
-        // 토큰 분리
-        String token = authorization.split(" ")[1];
-        System.out.println("token : "+token);
+        // 토큰이 있다면
+        // 토큰 만료 여부 확인, 만료 시 다음 필터로 넘기지 않음
+        try {
+            jwtUtil.isExpired(accessToken);
+        } catch (ExpiredJwtException e) { // 만료가 되었다면
+            // 응답 메세지
+            PrintWriter writer = response.getWriter();
+            writer.print("access token expired");
+            // 오류 코드
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return; // 그 다음 필터로 넘기면 안된다
+        }
 
-        // 토큰이 존재하지만 유효시간이 지났을 경우
-        if(jwtUtil.isExpired(token)) {
-            System.out.println("token expired");
-            filterChain.doFilter(request, response);
+        // 만료가 되지 않은 토큰이라면
+        // 토큰이 access 인지 확인
+        String category = jwtUtil.getCategory(accessToken);
 
+        if (!category.equals("access")) { // access 토큰이 아니라면
+            PrintWriter writer = response.getWriter();
+            writer.print("invalid access token");
+
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        // 토큰이 있고 유효시간이 지나지 않았을 경우
+        // 토큰 검증 완료
+        String username = jwtUtil.getUsername(accessToken);
+        String role = jwtUtil.getRole(accessToken);
 
-        // 토큰을 기반으로 일시적인 세션을 생성
-        // 그렇다며 현재 요청을 처리할 때 회원정보를 더 쉽고 빠르게 가져오기 위해서
-        // 잠시 일시적으로 시큐리티 컨텍스트에 저장하는 거고 요청이 끝나면 소멸
-        String username = jwtUtil.getUsername(token);
-        String role = jwtUtil.getRole(token);
-
+        // 현재의 요청에 대해서 회원 정보를 쉽게 접근하기 위해서 일시적인 세션을 형성함
+        // 이 세션은 현재 요청이 끝나면 소멸됨
         UserEntity userEntity = new UserEntity();
         userEntity.setUsername(username);
-        userEntity.setPassword("temppassword"); // 정확한 비밀번호 넣을 필요 없음
         userEntity.setRole(role);
 
         CustomUserDetails customUserDetails = new CustomUserDetails(userEntity);
-
-        Authentication authToken = new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities());
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(customUserDetails, null, customUserDetails.getAuthorities());
+        // 일시적인 세션 생성 -> 그 요청에 대해서 로그인된 상태이다
         SecurityContextHolder.getContext().setAuthentication(authToken);
 
-        // 요청을 다음 필터로 넘겨줌
         filterChain.doFilter(request, response);
+
     }
 }
